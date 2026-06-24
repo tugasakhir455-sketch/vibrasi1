@@ -121,8 +121,8 @@
         // =====================================
         // MEMBACA DATA REALTIME DARI FIREBASE
         // =====================================
-        // DISESUAIKAN PERSIS dengan program ESP32 Anda: "bearing_monitor/vibration"
-        const bearingRef = ref(db, 'bearing_monitor/vibration');
+        // Path disesuaikan menjadi 'Vibrasi' sesuai instruksi pengiriman updateNode() di ESP32
+        const bearingRef = ref(db, 'Vibrasi');
 
         onValue(bearingRef, (snapshot) => {
             const data = snapshot.val();
@@ -130,12 +130,12 @@
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID');
 
-                // Mengambil data sesuai dengan json.set() pada ESP32 Anda
-                const totalRMS = data.total_rms || 0;
-                const rmsX = data.rms_x || 0; 
-                const rmsY = data.rms_y || 0;
-                const rmsZ = data.rms_z || 0;
-                const statusMotor = data.status || "UNKNOWN";
+                // Mengambil key yang dikirimkan oleh struct JSON ESP32 Anda
+                const totalRMS = data.totalRMS !== undefined ? data.totalRMS : 0;
+                const rmsX = data.rms_x !== undefined ? data.rms_x : 0; 
+                const rmsY = data.rms_y !== undefined ? data.rms_y : 0;
+                const rmsZ = data.rms_z !== undefined ? data.rms_z : 0;
+                const statusMotor = data.kondisi || "UNKNOWN";
 
                 // 1. Update UI Angka & Status Card
                 document.getElementById('val-rms').innerText = totalRMS.toFixed(3);
@@ -209,43 +209,6 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Vibrasi");
 
-            const dateStr = now.toISOString().slice(0,10);
-            XLSX.writeFile(workbook, `Laporan_Vibrasi_${tipe}_${dateStr}.xlsx`);
-        };
-    </script>
-       
-        // Expose fungsi unduh ke objek window agar bisa diakses elemen HTML onclick
-        window.downloadExcel = function(tipe) {
-            if (dataLog.length === 0) {
-                alert("Data kosong! Tunggu data realtime masuk beberapa saat sebelum mengunduh.");
-                return;
-            }
-
-            const now = new Date();
-            let filteredData = [];
-
-            // Memfilter data yang sesuai berdasarkan waktu saat ini
-            if (tipe === 'harian') {
-                filteredData = dataLog.filter(d => (now - new Date(d.Waktu)) <= 24 * 60 * 60 * 1000);
-            } else if (tipe === 'mingguan') {
-                filteredData = dataLog.filter(d => (now - new Date(d.Waktu)) <= 7 * 24 * 60 * 60 * 1000);
-            } else if (tipe === 'bulanan') {
-                filteredData = dataLog.filter(d => (now - new Date(d.Waktu)) <= 30 * 24 * 60 * 60 * 1000);
-            } else if (tipe === 'tahunan') {
-                filteredData = dataLog.filter(d => (now - new Date(d.Waktu)) <= 365 * 24 * 60 * 60 * 1000);
-            }
-
-            if (filteredData.length === 0) {
-                alert(`Belum ada rekaman data yang masuk untuk kategori rentang ${tipe}.`);
-                return;
-            }
-
-            // Proses pembuatan file Excel menggunakan SheetJS
-            const worksheet = XLSX.utils.json_to_sheet(filteredData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Vibrasi");
-
-            // Format tanggal penamaan file
             const dateStr = now.toISOString().slice(0,10);
             XLSX.writeFile(workbook, `Laporan_Vibrasi_${tipe}_${dateStr}.xlsx`);
         };
