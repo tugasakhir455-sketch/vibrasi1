@@ -117,12 +117,11 @@
                 }
             }
         });
-
-        // =====================================
+// =====================================
         // MEMBACA DATA REALTIME DARI FIREBASE
         // =====================================
-        // Path disesuaikan dengan program ESP32 Anda: "/bearing_monitor"
-        const bearingRef = ref(db, 'bearing_monitor/vibration');
+        // DISESUAIKAN dengan folder utama di Firebase Anda yaitu "Vibrasi"
+        const bearingRef = ref(db, 'Vibrasi');
 
         onValue(bearingRef, (snapshot) => {
             const data = snapshot.val();
@@ -130,50 +129,54 @@
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID');
 
+                // Ambil nilai dari Firebase (totalRMS & kondisi sesuai nama di Firebase Anda)
+                const totalRMS = data.totalRMS || 0;
+                const rmsX = data.rms_x || 0; 
+                const rmsY = data.rms_y || 0;
+                const rmsZ = data.rms_z || 0;
+                const statusMotor = data.kondisi || "UNKNOWN";
+
                 // 1. Update UI Angka & Status Card
-                document.getElementById('val-rms').innerText = data.total_rms.toFixed(3);
-                document.getElementById('val-x').innerText = data.rms_x.toFixed(3);
-                document.getElementById('val-y').innerText = data.rms_y.toFixed(3);
-                document.getElementById('val-z').innerText = data.rms_z.toFixed(3);
+                document.getElementById('val-rms').innerText = totalRMS.toFixed(3);
+                document.getElementById('val-x').innerText = rmsX.toFixed(3);
+                document.getElementById('val-y').innerText = rmsY.toFixed(3);
+                document.getElementById('val-z').innerText = rmsZ.toFixed(3);
 
                 const statusEl = document.getElementById('status-motor');
-                statusEl.innerText = data.status;
+                statusEl.innerText = statusMotor;
                 
-                // Ubah warna teks status sesuai kondisi program ESP32 Anda
                 statusEl.className = "text-2xl font-black mt-2 " + 
-                    (data.status === "NORMAL" ? "text-emerald-400" : 
-                     data.status === "WARNING" ? "text-amber-400" : "text-rose-500");
+                    (statusMotor === "NORMAL" ? "text-emerald-400" : 
+                     statusMotor === "WARNING" ? "text-amber-400" : "text-rose-500");
 
-                // 2. Update Grafik Realtime (Maksimal 20 data berjalan di layar)
+                // 2. Update Grafik Realtime
                 if (vibrationChart.data.labels.length > 20) {
                     vibrationChart.data.labels.shift();
                     vibrationChart.data.datasets.forEach(dataset => dataset.data.shift());
                 }
 
                 vibrationChart.data.labels.push(timeString);
-                vibrationChart.data.datasets[0].data.push(data.total_rms);
-                vibrationChart.data.datasets[1].data.push(data.rms_x);
-                vibrationChart.data.datasets[2].data.push(data.rms_y);
-                vibrationChart.data.datasets[3].data.push(data.rms_z);
+                vibrationChart.data.datasets[0].data.push(totalRMS);
+                vibrationChart.data.datasets[1].data.push(rmsX);
+                vibrationChart.data.datasets[2].data.push(rmsY);
+                vibrationChart.data.datasets[3].data.push(rmsZ);
                 vibrationChart.update();
 
-                // 3. Simpan data ke log untuk Excel (Menghindari kehilangan data statis)
+                // 3. Simpan data ke log untuk Excel
                 const record = {
                     Waktu: now.toISOString(),
-                    Total_RMS: data.total_rms,
-                    RMS_X: data.rms_x,
-                    RMS_Y: data.rms_y,
-                    RMS_Z: data.rms_z,
-                    Status: data.status
+                    Total_RMS: totalRMS,
+                    RMS_X: rmsX,
+                    RMS_Y: rmsY,
+                    RMS_Z: rmsZ,
+                    Status: statusMotor
                 };
                 dataLog.push(record);
-                
-                // Batasi penyimpanan lokal browser agar tidak penuh (misal: 10000 data terakhir)
                 if (dataLog.length > 10000) dataLog.shift();
                 localStorage.setItem('vibration_logs', JSON.stringify(dataLog));
             }
         });
-
+       
         // Expose fungsi unduh ke objek window agar bisa diakses elemen HTML onclick
         window.downloadExcel = function(tipe) {
             if (dataLog.length === 0) {
