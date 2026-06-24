@@ -13,7 +13,7 @@
     <div class="container mx-auto px-4 py-8">
         <header class="mb-8 text-center md:text-left">
             <h1 class="text-3xl font-extrabold tracking-tight text-blue-400">MONITORING VIBRASI BEARING MOTOR</h1>
-            <p class="text-gray-400">Sistem Pemantauan Realtime & Pengunduhan Laporan (Mode Adaptif)</p>
+            <p class="text-gray-400">Sistem Pemantauan Realtime & Pengunduhan Laporan</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -23,19 +23,19 @@
             </div>
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
                 <span class="text-sm font-medium text-gray-400 uppercase">Total RMS</span>
-                <div class="text-4xl font-bold mt-2 text-blue-400" id="val-rms">0.00</div>
+                <div class="text-4xl font-bold mt-2 text-blue-400" id="val-rms">0.000</div>
             </div>
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
                 <span class="text-sm font-medium text-gray-400 uppercase">RMS Sumbu X</span>
-                <div class="text-4xl font-bold mt-2 text-emerald-400" id="val-x">0.00</div>
+                <div class="text-4xl font-bold mt-2 text-emerald-400" id="val-x">0.000</div>
             </div>
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
                 <span class="text-sm font-medium text-gray-400 uppercase">RMS Sumbu Y</span>
-                <div class="text-4xl font-bold mt-2 text-amber-400" id="val-y">0.00</div>
+                <div class="text-4xl font-bold mt-2 text-amber-400" id="val-y">0.000</div>
             </div>
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
                 <span class="text-sm font-medium text-gray-400 uppercase">RMS Sumbu Z</span>
-                <div class="text-4xl font-bold mt-2 text-rose-400" id="val-z">0.00</div>
+                <div class="text-4xl font-bold mt-2 text-rose-400" id="val-z">0.000</div>
             </div>
         </div>
 
@@ -47,7 +47,7 @@
         </div>
 
         <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-            <h2 class="text-xl font-bold mb-4 text-gray-200">Unduh Laporan Laporan (Excel)</h2>
+            <h2 class="text-xl font-bold mb-4 text-gray-200">Unduh Laporan Riwayat Vibrasi (Excel)</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <button onclick="downloadExcel('harian')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow">📦 Data Harian</button>
                 <button onclick="downloadExcel('mingguan')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow">🗓️ Data Mingguan</button>
@@ -88,39 +88,46 @@
                     { label: 'Sumbu Z', data: [], borderColor: '#f87171', tension: 0.2, fill: false }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
+                    y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af' } }
+                },
+                plugins: { legend: { labels: { color: '#f3f4f6' } } }
+            }
         });
 
-        // MENEMBAK PATH 'bearing_monitor/vibration' SESUAI CODE ESP32
-        const bearingRef = ref(db, 'bearing_monitor/vibration');
+        // 1. DIATUR KE PATH 'Vibrasi' SESUAI SCREENSHOT DATABASE ANDA
+        const vibrasiRef = ref(db, 'Vibrasi');
 
-        onValue(bearingRef, (snapshot) => {
+        onValue(vibrasiRef, (snapshot) => {
             const data = snapshot.val();
-            console.log("Data diterima dari Firebase:", data); // Membantu memantau di Inspect Element browser
-            
             if (data) {
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID');
 
-                // Menggunakan toleransi pembacaan Case Sensitive (Huruf besar/kecil)
-                const totalRMS = Number(data.total_rms || data.totalRMS || data.TotalRMS || 0);
-                const rmsX = Number(data.rms_x || data.rmsAx || data.rms_X || 0);
-                const rmsY = Number(data.rms_y || data.rmsAy || data.rms_Y || 0);
-                const rmsZ = Number(data.rms_z || data.rmsAz || data.rms_Z || 0);
-                const statusMotor = data.status || data.kondisi || data.Status || "UNKNOWN";
+                // 2. DISESUAIKAN KEY-NYA DENGAN SCREENSHOT FIREBASE CONSOLE ANDA
+                const totalRMS = data.totalRMS !== undefined ? Number(data.totalRMS) : 0;
+                const rmsX = data.rms_x !== undefined ? Number(data.rms_x) : 0;
+                const rmsY = data.rms_y !== undefined ? Number(data.rms_y) : 0;
+                const rmsZ = data.rms_z !== undefined ? Number(data.rms_z) : 0;
+                const statusMotor = data.kondisi || "UNKNOWN";
 
-                // 1. Update UI
-                document.getElementById('val-rms').innerText = totalRMS.toFixed(3);
-                document.getElementById('val-x').innerText = rmsX.toFixed(3);
-                document.getElementById('val-y').innerText = rmsY.toFixed(3);
-                document.getElementById('val-z').innerText = rmsZ.toFixed(3);
+                // Update Angka UI (Menggunakan 5 angka di belakang koma karena nilai getaran Anda sangat kecil)
+                document.getElementById('val-rms').innerText = totalRMS.toFixed(5);
+                document.getElementById('val-x').innerText = rmsX.toFixed(5);
+                document.getElementById('val-y').innerText = rmsY.toFixed(5);
+                document.getElementById('val-z').innerText = rmsZ.toFixed(5);
 
+                // Update Status Card
                 const statusEl = document.getElementById('status-motor');
                 statusEl.innerText = statusMotor;
                 statusEl.className = "text-2xl font-black mt-2 " + 
                     (statusMotor === "NORMAL" ? "text-emerald-400" : statusMotor === "WARNING" ? "text-amber-400" : "text-rose-500");
 
-                // 2. Update Chart
+                // Update Chart
                 if (vibrationChart.data.labels.length > 20) {
                     vibrationChart.data.labels.shift();
                     vibrationChart.data.datasets.forEach(d => d.data.shift());
@@ -132,7 +139,7 @@
                 vibrationChart.data.datasets[3].data.push(rmsZ);
                 vibrationChart.update();
 
-                // 3. Simpan Log
+                // Simpan Data Log untuk Excel
                 dataLog.push({ Waktu: now.toISOString(), Total_RMS: totalRMS, RMS_X: rmsX, RMS_Y: rmsY, RMS_Z: rmsZ, Status: statusMotor });
                 if (dataLog.length > 5000) dataLog.shift();
                 localStorage.setItem('vibration_logs', JSON.stringify(dataLog));
@@ -140,7 +147,7 @@
         });
 
         window.downloadExcel = function(tipe) {
-            if (dataLog.length === 0) { alert("Data kosong!"); return; }
+            if (dataLog.length === 0) { alert("Data kosong! Tunggu data masuk terlebih dahulu."); return; }
             const worksheet = XLSX.utils.json_to_sheet(dataLog);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Vibrasi");
